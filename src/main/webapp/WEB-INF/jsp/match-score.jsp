@@ -45,24 +45,34 @@
                 </tr>
                 </thead>
                 <tbody>
-                <tr class="player1">
-                    <td class="table-text">Rafael Nadal</td>
-                    <td class="table-text">2</td>
-                    <td class="table-text">4</td>
-                    <td class="table-text">40</td>
-                    <td class="table-text">
-                        <div class="score-btn">Score</div>
-                    </td>
-                </tr>
-                <tr class="player2">
-                    <td class="table-text">Roger Federer</td>
-                    <td class="table-text">2</td>
-                    <td class="table-text">3</td>
-                    <td class="table-text">15</td>
-                    <td class="table-text">
-                        <div class="score-btn">Score</div>
-                    </td>
-                </tr>
+				<c:if test="${not empty player1}">
+	                <tr class="player1">
+	                    <td class="table-text">${player1}</td>
+	                    <td class="table-text">${player1set}</td>
+	                    <td class="table-text">${player1game}</td>
+	                    <td class="table-text">${player1score}</td>
+	                    <td class="table-text">
+	                        <form method="post" action="#" class="score-btn">
+			                    <input type="hidden" name="player1" value="15">
+			                    <input class="form-button" type="submit" value="Score">
+	                        </form>
+	                    </td>
+	                </tr>
+				</c:if>
+				<c:if test="${not empty player2}">
+	                <tr class="player2">
+	                    <td class="table-text">${player2}</td>
+	                    <td class="table-text">${player2set}</td>
+	                    <td class="table-text">${player2game}</td>
+	                    <td class="table-text">${player2score}</td>
+	                    <td class="table-text">
+	                        <form method="post" action="#" class="score-btn">
+			                    <input type="hidden" name="player2" value="15">
+			                    <input class="form-button" type="submit" value="Score">
+	                        </form>
+	                    </td>
+	                </tr>
+                </c:if>
                 </tbody>
             </table>
         </section>

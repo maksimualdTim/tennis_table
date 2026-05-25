@@ -35,4 +35,5 @@ public class Match {
     @ManyToOne
     @JoinColumn(name = "Winner", referencedColumnName = "ID", nullable = false)
     private Player winner;
+
 }

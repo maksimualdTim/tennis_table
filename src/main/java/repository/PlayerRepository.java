@@ -10,7 +10,7 @@ import model.Player;
 
 @AllArgsConstructor
 public class PlayerRepository {
-	EntityManager entityManager;
+	private EntityManager entityManager;
 	
 	public Optional<Player> findByName(String name){
 		String hql = "SELECT p FROM Player p WHERE p.name=:name";
@@ -29,17 +29,7 @@ public class PlayerRepository {
         Player player = new Player();
         player.setName(name);
 
-        entityManager.getTransaction().begin();
-
-        try {
-            entityManager.persist(player);
-            entityManager.getTransaction().commit();
-            return player;
-        } catch (RuntimeException e) {
-            if (entityManager.getTransaction().isActive()) {
-                entityManager.getTransaction().rollback();
-            }
-            throw e;
-        }
+        entityManager.persist(player);
+        return player;
     }
 }
