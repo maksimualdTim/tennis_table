@@ -33,15 +33,96 @@ public class MatchService {
             match.setPlayer1(player1);
             match.setPlayer2(player2);
 
-            UUID matchUuid;
+            UUID uuid = registerOngoingMatch(match);
+            
+            entityManager.getTransaction().commit();
 
-            do {
-                matchUuid = UUID.randomUUID();
-            } while (currentMatches.putIfAbsent(matchUuid, match) != null);
+            return uuid;
+
+        } catch (RuntimeException e) {
+            if (entityManager.getTransaction().isActive()) {
+                entityManager.getTransaction().rollback();
+            }
+
+            throw e;
+
+        } finally {
+            entityManager.close();
+        }
+    }
+    
+    public UUID registerOngoingMatch(Match match) {
+        UUID uuid;
+
+        do {
+            uuid = UUID.randomUUID();
+        } while (currentMatches.putIfAbsent(uuid, match) != null);
+
+        return uuid;
+    }
+
+    public Match getMatch(UUID id) {
+        Match match = currentMatches.get(id);
+
+        if (match == null) {
+            throw new IllegalArgumentException("Match not found");
+        }
+
+        return match;
+    }
+
+    public boolean addPointAndCheckFinishMatch(Match match, int playerNumber) {
+        synchronized (match) {
+            if (checkFinish(match)) {
+                throw new IllegalStateException("Match is already finished");
+            }
+
+            Player pointWinner = playerNumber == 1
+                    ? match.getPlayer1()
+                    : match.getPlayer2();
+
+            Player opponent = playerNumber == 1
+                    ? match.getPlayer2()
+                    : match.getPlayer1();
+
+            if (match.isTieBreak() || isSixSix(match)) {
+                match.setTieBreak(true);
+                applyTieBreakPoint(match, pointWinner, opponent);
+                return false;
+            }
+
+            applyRegularPoint(match, pointWinner, opponent);
+            
+            if(checkFinish(match)) {
+            	return true;
+            }
+            return false;
+        }
+    }
+    
+    private boolean checkFinish(Match match) {
+		return match.getWinner() != null;
+	}
+    
+    public void finishMatch(UUID matchId, Match match) {
+        EntityManager entityManager = JpaConfig.getEntityManager();
+
+        try {
+            entityManager.getTransaction().begin();
+
+            Player player1 = entityManager.merge(match.getPlayer1());
+            Player player2 = entityManager.merge(match.getPlayer2());
+            Player winner = entityManager.merge(match.getWinner());
+
+            match.setPlayer1(player1);
+            match.setPlayer2(player2);
+            match.setWinner(winner);
+
+            entityManager.merge(match);
 
             entityManager.getTransaction().commit();
 
-            return matchUuid;
+            currentMatches.remove(matchId);
 
         } catch (RuntimeException e) {
             if (entityManager.getTransaction().isActive()) {
@@ -55,41 +136,7 @@ public class MatchService {
         }
     }
 
-    public Match getMatch(UUID id) {
-        Match match = currentMatches.get(id);
-
-        if (match == null) {
-            throw new IllegalArgumentException("Match not found");
-        }
-
-        return match;
-    }
-
-    public void addPoint(Match match, int playerNumber) {
-        synchronized (match) {
-            Player pointWinner;
-            Player opponent;
-
-            if (playerNumber == 1) {
-                pointWinner = match.getPlayer1();
-                opponent = match.getPlayer2();
-            } else if (playerNumber == 2) {
-                pointWinner = match.getPlayer2();
-                opponent = match.getPlayer1();
-            } else {
-                throw new IllegalArgumentException("Invalid player number");
-            }
-
-            applyPoint(match, pointWinner, opponent);
-        }
-    }
-
-    private void applyPoint(Match match, Player pointWinner, Player opponent) {
-
-        if (match.getWinner() != null) {
-            throw new IllegalStateException("Match is already finished");
-        }
-
+    private void applyRegularPoint(Match match, Player pointWinner, Player opponent) {
         if (pointWinner.isAdvantage()) {
             winGame(match, pointWinner, opponent);
             return;
@@ -111,6 +158,34 @@ public class MatchService {
         }
 
         pointWinner.nextScore();
+    }
+    
+    private boolean isSixSix(Match match) {
+        return match.getPlayer1().getGame() == 6
+                && match.getPlayer2().getGame() == 6;
+    }
+    
+    private void applyTieBreakPoint(Match match, Player pointWinner, Player opponent) {
+        pointWinner.addTieBreakPoint();
+
+        if (pointWinner.getTieBreakScore() >= 7
+                && pointWinner.getTieBreakScore() - opponent.getTieBreakScore() >= 2) {
+
+            pointWinner.addSet();
+
+            pointWinner.resetGame();
+            opponent.resetGame();
+
+            pointWinner.resetScore();
+            opponent.resetScore();
+
+            pointWinner.resetTieBreakScore();
+            opponent.resetTieBreakScore();
+
+            match.setTieBreak(false);
+
+            checkMatchWin(match, pointWinner);
+        }
     }
     
     private void winGame(Match match, Player gameWinner, Player opponent) {

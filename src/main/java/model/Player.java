@@ -36,6 +36,10 @@ public class Player {
     private int set = 0;
     
     @Transient
+    private int tieBreakScore = 0;
+    
+    
+    @Transient
     private boolean advantage = false;
 
     public void nextScore() {
@@ -52,6 +56,7 @@ public class Player {
 
     public void resetScore() {
         score = 0;
+        advantage = false;
     }
 
     public void addGame() {
@@ -64,5 +69,13 @@ public class Player {
 
     public void addSet() {
         set++;
+    }
+    
+    public void addTieBreakPoint() {
+        tieBreakScore++;
+    }
+
+    public void resetTieBreakScore() {
+        tieBreakScore = 0;
     }
 }

@@ -58,18 +58,24 @@ public class MatchScoreServlet extends HttpServlet {
             UUID matchId = UUID.fromString(request.getParameter("uuid"));
             
             Match match = matchService.getMatch(matchId);
+            boolean isFinished;
 
             if (request.getParameter("player1") != null) {
-                matchService.addPoint(match, 1);
+            	isFinished = matchService.addPointAndCheckFinishMatch(match, 1);
             } else if (request.getParameter("player2") != null) {
-                matchService.addPoint(match, 2);
+            	isFinished = matchService.addPointAndCheckFinishMatch(match, 2);
             } else {
                 throw new IllegalArgumentException("Player is not selected");
             }
-            fillScoreTable(request, match);
-            response.sendRedirect(
-                    request.getContextPath() + "/match-score?uuid=" + matchId
-            );
+            if (isFinished) {
+            	matchService.finishMatch(matchId, match);
+            	response.sendRedirect(request.getContextPath() + "/matches");
+            } else {
+                fillScoreTable(request, match);
+                response.sendRedirect(
+                        request.getContextPath() + "/match-score?uuid=" + matchId
+                );
+            }
 
         } catch (Exception e) {
             request.setAttribute("error", e.getMessage());
