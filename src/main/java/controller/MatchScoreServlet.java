@@ -98,6 +98,6 @@ public class MatchScoreServlet extends HttpServlet {
 		request.setAttribute("player2game", match.getPlayer2().getGame());
 		
 		request.setAttribute("player1set", match.getPlayer1().getSet());
-		request.setAttribute("player2set", match.getPlayer1().getSet());
+		request.setAttribute("player2set", match.getPlayer2().getSet());
 	}
 }

@@ -1,5 +1,7 @@
 package service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -9,6 +11,7 @@ import dto.NewMatchDTO;
 import jakarta.persistence.EntityManager;
 import model.Match;
 import model.Player;
+import repository.MatchRepository;
 import repository.PlayerRepository;
 
 public class MatchService {
@@ -99,6 +102,32 @@ public class MatchService {
             return false;
         }
     }
+    
+    public List<Match> filterMatches(String name, int page) {
+    	EntityManager entityManager = JpaConfig.getEntityManager();
+    	
+    	try {
+			MatchRepository matchRepository = new MatchRepository(entityManager);
+			return matchRepository.findByName(name, (page-1)*5);
+		} finally {
+			entityManager.close();
+		}
+	}
+    
+    public Long countPage() {
+    	EntityManager entityManager = JpaConfig.getEntityManager();
+    	try {
+    		Long count = entityManager.createQuery("select count(*) from Match", Long.class).getSingleResult();
+    		Long pageNumQuotient = count / 5;
+    		Long pageNumRemainder = count % 5;
+    		if (pageNumRemainder == 0) {
+				return pageNumQuotient;
+			}
+    		return pageNumQuotient + 1;
+		} finally {
+			entityManager.close();
+		}
+	}
     
     private boolean checkFinish(Match match) {
 		return match.getWinner() != null;
